@@ -20,6 +20,7 @@ export default function Quiz() {
   
   const [words, setWords] = useState<Word[]>([]);
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
+  const [quizLimit, setQuizLimit] = useState<number | "all">("all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showDefinition, setShowDefinition] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ export default function Quiz() {
     setLoading(true);
     setIsFinished(false);
     setQuizMode(null);
+    setQuizLimit("all");
     setCurrentIndex(0);
     setCorrectWords([]);
     setMissedWords([]);
@@ -69,20 +71,25 @@ export default function Quiz() {
     }
   };
 
+  const finalWords = useMemo(() => {
+    if (quizLimit === "all") return words;
+    return words.slice(0, quizLimit);
+  }, [words, quizLimit]);
+
   useEffect(() => {
     fetchWords();
   }, [topicId, searchParams.get("mode")]);
 
   const options = useMemo(() => {
-    if (!quizMode || quizMode === "flashcard" || words.length === 0 || isFinished) return [];
+    if (!quizMode || quizMode === "flashcard" || finalWords.length === 0 || isFinished) return [];
     
-    const correctWord = words[currentIndex];
+    const correctWord = finalWords[currentIndex];
     const others = words.filter(w => w.id !== correctWord.id);
     const shuffledOthers = [...others].sort(() => Math.random() - 0.5);
     const selectedOthers = shuffledOthers.slice(0, 3);
     
     return [correctWord, ...selectedOthers].sort(() => Math.random() - 0.5);
-  }, [quizMode, currentIndex, words, isFinished]);
+  }, [quizMode, currentIndex, finalWords, words, isFinished]);
 
   const recordResult = async (wordId: string, isCorrect: boolean) => {
     try {
@@ -97,7 +104,7 @@ export default function Quiz() {
   };
 
   const handleFlashcardChoice = (isCorrect: boolean) => {
-    const currentWord = words[currentIndex];
+    const currentWord = finalWords[currentIndex];
     recordResult(currentWord.id, isCorrect);
     if (isCorrect) setCorrectWords(prev => [...prev, currentWord]);
     else setMissedWords(prev => [...prev, currentWord]);
@@ -106,14 +113,14 @@ export default function Quiz() {
 
   const handleMultipleChoice = (wordId: string) => {
     if (selectedOptionId) return;
-    const correctWord = words[currentIndex];
+    const correctWord = finalWords[currentIndex];
     const isCorrect = wordId === correctWord.id;
     setSelectedOptionId(wordId);
 
     recordResult(correctWord.id, isCorrect);
 
     if (isCorrect) setCorrectWords(prev => [...prev, correctWord]);
-    else setMissedWords(prev => [...prev, currentWord]);
+    else setMissedWords(prev => [...prev, correctWord]);
 
     setTimeout(() => {
       goToNext();
@@ -123,7 +130,7 @@ export default function Quiz() {
 
   const goToNext = () => {
     setShowDefinition(false);
-    if (currentIndex === words.length - 1) {
+    if (currentIndex === finalWords.length - 1) {
       finishQuiz();
     } else {
       setCurrentIndex((prev) => prev + 1);
@@ -163,8 +170,46 @@ export default function Quiz() {
         <Link href={topicId ? `/topic/${topicId}` : "/"} className="absolute top-8 left-8 text-blue-900 font-bold flex items-center gap-2 hover:opacity-70 bg-white px-6 py-3 rounded-2xl border border-blue-100 shadow-sm transition-all">
           <ChevronLeft size={20} /> Back
         </Link>
-        <h2 className="text-4xl font-black text-blue-900 mb-2 tracking-tighter">Choose Your Mode</h2>
-        <p className="text-gray-500 mb-12 font-medium">Pick the best way to practice today.</p>
+        
+        <div className="mb-10 text-center">
+          <h2 className="text-4xl font-black text-blue-900 mb-2 tracking-tighter">Choose Your Mode</h2>
+          <p className="text-gray-500 font-medium">Pick the best way to practice today.</p>
+        </div>
+
+        <div className="mb-12 bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-50 w-full max-w-2xl text-center">
+          <h3 className="text-sm font-black text-blue-300 uppercase tracking-widest mb-6">How many words to practice?</h3>
+          
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center gap-4 w-full px-4">
+              <input
+                type="range"
+                min="1"
+                max={words.length}
+                value={quizLimit === "all" ? words.length : quizLimit}
+                onChange={(e) => setQuizLimit(parseInt(e.target.value))}
+                className="flex-1 h-3 bg-blue-100 rounded-full appearance-none cursor-pointer accent-blue-600"
+              />
+              <div className="flex items-center gap-2 bg-blue-50 px-5 py-2 rounded-2xl border border-blue-100">
+                <input
+                  type="number"
+                  min="1"
+                  max={words.length}
+                  value={quizLimit === "all" ? words.length : quizLimit}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) setQuizLimit(Math.min(Math.max(1, val), words.length));
+                  }}
+                  className="w-16 bg-transparent text-center font-black text-blue-900 outline-none"
+                />
+                <span className="text-blue-300 font-bold">/ {words.length}</span>
+              </div>
+            </div>
+            
+            <p className="text-gray-400 text-sm font-medium">
+              You will practice <span className="text-blue-600 font-bold">{quizLimit === "all" ? words.length : quizLimit}</span> random words from this collection.
+            </p>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
           <button onClick={() => setQuizMode("flashcard")} className="bg-white p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all border-4 border-white hover:border-blue-200 flex flex-col items-center group">
@@ -235,15 +280,15 @@ export default function Quiz() {
     );
   }
 
-  const currentWord = words[currentIndex];
+  const currentWord = finalWords[currentIndex];
 
   return (
     <main className="min-h-screen bg-blue-50/50 p-8 md:p-24 flex flex-col items-center">
       <header className="w-full max-w-2xl flex justify-between items-center mb-12">
         <button onClick={fetchWords} className="text-blue-900 font-bold flex items-center gap-2 hover:opacity-70 bg-white px-6 py-3 rounded-2xl border border-blue-100 shadow-sm transition-all"><ChevronLeft size={20} /> Exit</button>
         <div className="flex flex-col items-end">
-          <span className="text-blue-900 font-black text-xl">{currentIndex + 1} / {words.length}</span>
-          <div className="w-32 h-2 bg-blue-100 rounded-full mt-2 overflow-hidden"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }} /></div>
+          <span className="text-blue-900 font-black text-xl">{currentIndex + 1} / {finalWords.length}</span>
+          <div className="w-32 h-2 bg-blue-100 rounded-full mt-2 overflow-hidden"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${((currentIndex + 1) / finalWords.length) * 100}%` }} /></div>
         </div>
       </header>
 
