@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  words       Word[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Word {
+  id           String   @id @default(cuid())
+  word         String
+  definition   String
+  example      String?
+  topicId      String
+  topic        Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  correctCount Int      @default(0)
+  missedCount  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model UserStats {
+  id               String   @id @default("global-stats")
+  totalExp         Int      @default(0)
+  level            Int      @default(1)
+  wordsAdded       Int      @default(0)
+  quizzesCompleted Int      @default(0)
+  updatedAt        DateTime @updatedAt
+}
