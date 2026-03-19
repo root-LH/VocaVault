@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
 
@@ -22,6 +22,7 @@ interface Topic {
 export default function TopicDetail({ params }: { params: { id: string } }) {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTopic = async () => {
@@ -110,12 +111,23 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
                 key={w.id}
                 className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all group relative"
               >
-                <button
-                  onClick={() => deleteWord(w.id)}
-                  className="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button
+                    onClick={() => {
+                      setEditingWord(w);
+                      setShowForm(true);
+                    }}
+                    className="text-gray-300 hover:text-blue-500 p-2"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => deleteWord(w.id)}
+                    className="text-gray-300 hover:text-red-500 p-2"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                   {w.word}
                 </h3>
@@ -134,7 +146,11 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
       {showForm && (
         <WordForm 
           topicId={topic.id} 
-          onClose={() => setShowForm(false)} 
+          initialData={editingWord || undefined}
+          onClose={() => {
+            setShowForm(false);
+            setEditingWord(null);
+          }} 
           onSuccess={fetchTopic} 
         />
       )}
