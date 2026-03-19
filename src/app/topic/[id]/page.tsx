@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen, Volume2 } from "lucide-react";
+import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen, Volume2, Download, Upload } from "lucide-react";
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
 import TopicForm from "@/components/TopicForm";
 import ThemeToggle from "@/components/ThemeToggle";
 import { speak } from "@/lib/speech";
+import { downloadCSV, parseCSV } from "@/lib/csv";
 
 interface Word {
   id: string;
@@ -28,6 +29,50 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
   const [showTopicForm, setShowTopicForm] = useState(false);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleExport = () => {
+    if (!topic || topic.words.length === 0) return;
+    downloadCSV(topic.words, `${topic.name}_words.csv`);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !topic) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const words = parseCSV(text);
+      
+      if (words.length === 0) {
+        alert("No valid words found in CSV. Please ensure the CSV has a header row.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/topics/${topic.id}/words/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ words }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`${data.count} words imported!`);
+          fetchTopic();
+        } else {
+          const data = await res.json();
+          alert(`Failed to import: ${data.error || "Unknown error"}${data.details ? `\n\nDetails: ${data.details}` : ""}`);
+        }
+      } catch (err) {
+        console.error("Import error:", err);
+        alert("An error occurred during import.");
+      }
+    };
+    reader.readAsText(file);
+    // 같은 파일을 다시 선택할 수 있도록 초기화
+    e.target.value = "";
+  };
 
   const fetchTopic = async () => {
     try {
@@ -91,7 +136,27 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
               </p>
             </div>
             
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 px-5 py-3 rounded-2xl transition-all shadow-sm font-semibold"
+                title="Export words to CSV"
+              >
+                <Download size={20} />
+                Export
+              </button>
+              
+              <label className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 px-5 py-3 rounded-2xl transition-all shadow-sm font-semibold cursor-pointer">
+                <Upload size={20} />
+                Import
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  className="hidden" 
+                  onChange={handleImport}
+                />
+              </label>
+
               <Link 
                 href={`/topic/${topic.id}/study`}
                 className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-emerald-900 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold transition-colors"
