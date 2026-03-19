@@ -6,11 +6,16 @@ import { X } from "lucide-react";
 interface TopicFormProps {
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
 }
 
-export default function TopicForm({ onClose, onSuccess }: TopicFormProps) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+export default function TopicForm({ onClose, onSuccess, initialData }: TopicFormProps) {
+  const [name, setName] = useState(initialData?.name || "");
+  const [description, setDescription] = useState(initialData?.description || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,8 +23,11 @@ export default function TopicForm({ onClose, onSuccess }: TopicFormProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/topics", {
-        method: "POST",
+      const url = initialData ? `/api/topics/${initialData.id}` : "/api/topics";
+      const method = initialData ? "PATCH" : "POST";
+      
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, description }),
       });
@@ -29,7 +37,7 @@ export default function TopicForm({ onClose, onSuccess }: TopicFormProps) {
         onClose();
       } else {
         const data = await response.json();
-        alert(data.error || "Failed to create topic");
+        alert(data.error || `Failed to ${initialData ? 'update' : 'create'} topic`);
       }
     } catch (error) {
       alert("Network error occurred");
@@ -48,7 +56,9 @@ export default function TopicForm({ onClose, onSuccess }: TopicFormProps) {
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-gray-900">Create New Topic</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">
+          {initialData ? "Edit Topic" : "Create New Topic"}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -78,7 +88,7 @@ export default function TopicForm({ onClose, onSuccess }: TopicFormProps) {
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl mt-4"
           >
-            {loading ? "Creating..." : "Create Topic"}
+            {loading ? (initialData ? "Updating..." : "Creating...") : (initialData ? "Update Topic" : "Create Topic")}
           </button>
         </form>
       </div>

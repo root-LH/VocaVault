@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen } from "lucide-react";
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
+import TopicForm from "@/components/TopicForm";
 
 interface Word {
   id: string;
@@ -22,6 +23,7 @@ interface Topic {
 export default function TopicDetail({ params }: { params: { id: string } }) {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showTopicForm, setShowTopicForm] = useState(false);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +71,16 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
-              <h1 className="text-5xl font-black text-gray-900 tracking-tight mb-4">{topic.name}</h1>
+              <div className="flex items-center gap-4 mb-4">
+                <h1 className="text-5xl font-black text-gray-900 tracking-tight">{topic.name}</h1>
+                <button
+                  onClick={() => setShowTopicForm(true)}
+                  className="text-gray-400 hover:text-blue-600 transition-colors p-2"
+                  title="Edit topic"
+                >
+                  <Pencil size={24} />
+                </button>
+              </div>
               <p className="text-gray-500 text-xl max-w-xl leading-relaxed">
                 {topic.description || "Collection of specialized vocabulary."}
               </p>
@@ -159,6 +170,17 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
             setEditingWord(null);
           }} 
           onSuccess={fetchTopic} 
+        />
+      )}
+      {showTopicForm && (
+        <TopicForm
+          initialData={{
+            id: topic.id,
+            name: topic.name,
+            description: topic.description,
+          }}
+          onClose={() => setShowTopicForm(false)}
+          onSuccess={fetchTopic}
         />
       )}
     </main>
