@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil } from "lucide-react";
+import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen } from "lucide-react";
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
 
@@ -77,11 +77,18 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
             
             <div className="flex gap-4">
               <Link 
+                href={`/topic/${topic.id}/study`}
+                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-emerald-900 border border-emerald-100 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold"
+              >
+                <BookOpen size={20} />
+                Study
+              </Link>
+              <Link 
                 href={`/quiz?topic=${topic.id}`}
                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-blue-900 border border-blue-100 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold"
               >
                 <GraduationCap size={20} />
-                Quiz Topic
+                Quiz
               </Link>
               <button
                 onClick={() => setShowForm(true)}

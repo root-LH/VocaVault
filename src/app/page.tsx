@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame } from "lucide-react";
+import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen } from "lucide-react";
 import Link from "next/link";
 import TopicForm from "@/components/TopicForm";
 import LevelBadge from "@/components/LevelBadge";
@@ -66,12 +66,28 @@ export default function Home() {
             <LevelBadge />
             <div className="flex gap-2">
               <Link 
+                href="/study"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg font-bold"
+                title="Study all your words"
+              >
+                <BookOpen size={20} />
+                Study All
+              </Link>
+              <Link 
+                href="/study?mode=weak"
+                className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-100 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+                title="Study words you missed"
+              >
+                <BookOpen size={20} />
+                Study Weak
+              </Link>
+              <Link 
                 href="/quiz?mode=weak"
                 className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
                 title="Quiz only words you missed"
               >
                 <Flame size={20} className="fill-current" />
-                Weak Point
+                Weak Quiz
               </Link>
               <Link 
                 href="/quiz"
