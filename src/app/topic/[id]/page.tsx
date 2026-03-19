@@ -5,6 +5,7 @@ import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen, 
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
 import TopicForm from "@/components/TopicForm";
+import ThemeToggle from "@/components/ThemeToggle";
 import { speak } from "@/lib/speech";
 
 interface Word {
@@ -58,31 +59,34 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading topic...</div>;
-  if (!topic) return <div className="min-h-screen flex items-center justify-center">Topic not found.</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center dark:bg-gray-950 dark:text-white transition-colors">Loading topic...</div>;
+  if (!topic) return <div className="min-h-screen flex items-center justify-center dark:bg-gray-950 dark:text-white transition-colors">Topic not found.</div>;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 md:p-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 p-8 md:p-24 transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         <header className="mb-12">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-8 font-bold transition-all">
-            <ArrowLeft size={20} />
-            Back to Topics
-          </Link>
+          <div className="flex justify-between items-center mb-8">
+            <Link href="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-2 font-bold transition-all">
+              <ArrowLeft size={20} />
+              Back to Topics
+            </Link>
+            <ThemeToggle />
+          </div>
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <h1 className="text-5xl font-black text-gray-900 tracking-tight">{topic.name}</h1>
+                <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tight transition-colors">{topic.name}</h1>
                 <button
                   onClick={() => setShowTopicForm(true)}
-                  className="text-gray-400 hover:text-blue-600 transition-colors p-2"
+                  className="text-gray-400 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2"
                   title="Edit topic"
                 >
                   <Pencil size={24} />
                 </button>
               </div>
-              <p className="text-gray-500 text-xl max-w-xl leading-relaxed">
+              <p className="text-gray-500 dark:text-gray-400 text-xl max-w-xl leading-relaxed transition-colors">
                 {topic.description || "Collection of specialized vocabulary."}
               </p>
             </div>
@@ -90,14 +94,14 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
             <div className="flex gap-4">
               <Link 
                 href={`/topic/${topic.id}/study`}
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-emerald-900 border border-emerald-100 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold"
+                className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-emerald-900 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold transition-colors"
               >
                 <BookOpen size={20} />
                 Study
               </Link>
               <Link 
                 href={`/quiz?topic=${topic.id}`}
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-blue-900 border border-blue-100 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold"
+                className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-900 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 px-6 py-3 rounded-2xl transition-all shadow-sm font-semibold transition-colors"
               >
                 <GraduationCap size={20} />
                 Quiz
@@ -114,8 +118,8 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
         </header>
 
         {topic.words.length === 0 ? (
-          <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-gray-200">
-            <p className="text-gray-400 text-lg mb-8">This topic is empty. Add your first word to start learning!</p>
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 transition-colors">
+            <p className="text-gray-400 dark:text-gray-500 text-lg mb-8 transition-colors">This topic is empty. Add your first word to start learning!</p>
             <button
               onClick={() => setShowForm(true)}
               className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all"
@@ -128,7 +132,7 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
             {topic.words.map((w) => (
               <div
                 key={w.id}
-                className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all group relative"
+                className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all group relative"
               >
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button
@@ -136,19 +140,19 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
                       setEditingWord(w);
                       setShowForm(true);
                     }}
-                    className="text-gray-300 hover:text-blue-500 p-2"
+                    className="text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 p-2 transition-colors"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => deleteWord(w.id)}
-                    className="text-gray-300 hover:text-red-500 p-2"
+                    className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-2 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mb-2 pr-20">
-                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors break-words">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-words">
                     {w.word}
                   </h3>
                   <button 
@@ -156,15 +160,15 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
                       e.stopPropagation();
                       speak(w.word);
                     }}
-                    className="text-gray-300 hover:text-blue-400 p-1 transition-colors"
+                    className="text-gray-300 dark:text-gray-600 hover:text-blue-400 dark:hover:text-blue-300 p-1 transition-colors"
                     title="Listen to pronunciation"
                   >
                     <Volume2 size={20} />
                   </button>
                 </div>
-                <p className="text-gray-600 leading-relaxed">{w.definition}</p>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed transition-colors">{w.definition}</p>
                 {w.example && (
-                  <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/50 transition-colors">
                     "{w.example}"
                   </p>
                 )}
