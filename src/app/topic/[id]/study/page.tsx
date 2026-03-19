@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Eye, ArrowLeft, RefreshCw, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, ArrowLeft, RefreshCw, Shuffle, Volume2 } from "lucide-react";
 import Link from "next/link";
+import { speak } from "@/lib/speech";
 
 interface Word {
   id: string;
@@ -94,9 +95,19 @@ export default function StudyPage({ params }: { params: { id: string } }) {
           className={`bg-white rounded-[3rem] shadow-2xl p-12 min-h-[400px] flex flex-col items-center justify-center text-center transition-all border-8 border-white relative cursor-pointer hover:scale-[1.01] ${showDefinition ? 'border-emerald-100' : ''}`}
         >
           {!showDefinition ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full relative">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  speak(currentWord.word);
+                }}
+                className="absolute right-0 top-0 text-emerald-300 hover:text-emerald-600 p-4 transition-colors rounded-full hover:bg-emerald-50"
+                title="Listen to pronunciation (Key: S)"
+              >
+                <Volume2 size={40} />
+              </button>
               <span className="text-xs font-black text-emerald-300 uppercase tracking-widest mb-4 block">Word</span>
-              <h2 className="text-6xl font-black text-emerald-900 mb-8 tracking-tighter">{currentWord.word}</h2>
+              <h2 className="text-6xl font-black text-emerald-900 mb-8 tracking-tighter break-words px-12">{currentWord.word}</h2>
               <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-8 py-4 rounded-full font-bold">
                 <Eye size={20} /> Click to reveal meaning
               </div>
@@ -150,6 +161,9 @@ export default function StudyPage({ params }: { params: { id: string } }) {
               document.querySelector('button:first-child').click();
             } else if (e.code === 'KeyV' || e.code === 'Enter') {
               document.querySelector('.cursor-pointer').click();
+            } else if (e.code === 'KeyS') {
+              const speakerBtn = document.querySelector('button[title*="Listen"]');
+              if (speakerBtn) speakerBtn.click();
             }
           };
         `

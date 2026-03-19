@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen } from "lucide-react";
+import { Plus, ChevronLeft, GraduationCap, Trash2, ArrowLeft, Pencil, BookOpen, Volume2 } from "lucide-react";
 import Link from "next/link";
 import WordForm from "@/components/WordForm";
 import TopicForm from "@/components/TopicForm";
+import { speak } from "@/lib/speech";
 
 interface Word {
   id: string;
@@ -146,10 +147,22 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                  {w.word}
-                </h3>
-                <p className="text-gray-600 mt-2 leading-relaxed">{w.definition}</p>
+                <div className="flex items-center gap-2 mb-2 pr-20">
+                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors break-words">
+                    {w.word}
+                  </h3>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      speak(w.word);
+                    }}
+                    className="text-gray-300 hover:text-blue-400 p-1 transition-colors"
+                    title="Listen to pronunciation"
+                  >
+                    <Volume2 size={20} />
+                  </button>
+                </div>
+                <p className="text-gray-600 leading-relaxed">{w.definition}</p>
                 {w.example && (
                   <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-4 rounded-2xl border border-gray-100">
                     "{w.example}"
