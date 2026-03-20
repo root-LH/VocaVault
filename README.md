@@ -48,17 +48,22 @@
    npm install
    ```
 
-2. **데이터베이스 초기화 (Vibe Sync)**:
+2. **환경 설정**:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **데이터베이스 초기화 (Vibe Sync)**:
    ```bash
    npx prisma db push
    ```
 
-3. **개발 서버 실행**:
+4. **개발 서버 실행**:
    ```bash
    npm run dev
    ```
 
-4. **접속**: `http://localhost:3000` 에서 당신의 단어 보관소를 확인하세요.
+5. **접속**: `http://localhost:3000` 에서 당신의 단어 보관소를 확인하세요.
 
 ---
 
