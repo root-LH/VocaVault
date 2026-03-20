@@ -14,7 +14,9 @@ interface Word {
 
 type QuizMode = "flashcard" | "mc-def-to-word" | "mc-word-to-def";
 
-export default function Quiz() {
+import { Suspense } from "react";
+
+function QuizContent() {
   const searchParams = useSearchParams();
   const topicId = searchParams.get("topic");
   const topicsParam = searchParams.get("topics");
@@ -346,5 +348,13 @@ export default function Quiz() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Quiz() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold text-blue-600">Loading quiz...</div>}>
+      <QuizContent />
+    </Suspense>
   );
 }

@@ -14,7 +14,9 @@ interface Word {
   example: string | null;
 }
 
-export default function GeneralStudyPage() {
+import { Suspense } from "react";
+
+function StudyContent() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const topicsParam = searchParams.get("topics");
@@ -167,5 +169,13 @@ export default function GeneralStudyPage() {
         `
       }} />
     </main>
+  );
+}
+
+export default function GeneralStudyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold text-emerald-600">Loading study session...</div>}>
+      <StudyContent />
+    </Suspense>
   );
 }

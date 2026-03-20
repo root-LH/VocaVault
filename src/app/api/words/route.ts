@@ -31,17 +31,17 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { word, definition, example } = body;
+    const { word, definition, example, topicId } = body;
 
-    if (!word || !definition) {
+    if (!word || !definition || !topicId) {
       return NextResponse.json(
-        { error: "Word and definition are required" },
+        { error: "Word, definition and topicId are required" },
         { status: 400 }
       );
     }
 
     const newWord = await prisma.word.create({
-      data: { word, definition, example },
+      data: { word, definition, example, topicId },
     });
 
     return NextResponse.json(newWord);

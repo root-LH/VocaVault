@@ -6,6 +6,9 @@
 # Next.js
 /.next/
 /out/
+/dist/
+/release/
+/build/
 
 # Database (SQLite)
 # 로컬 데이터베이스 파일은 Git에 올리지 않습니다.
