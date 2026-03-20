@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const topics = searchParams.get("topics");
+    
+    let whereClause = {};
+    if (topics) {
+      const topicIds = topics.split(",").filter(id => id.trim() !== "");
+      if (topicIds.length > 0) {
+        whereClause = {
+          topicId: {
+            in: topicIds
+          }
+        };
+      }
+    }
+
     const words = await prisma.word.findMany({
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(words);

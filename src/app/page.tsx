@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen } from "lucide-react";
+import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check } from "lucide-react";
 import Link from "next/link";
 import TopicForm from "@/components/TopicForm";
 import LevelBadge from "@/components/LevelBadge";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useRouter } from "next/navigation";
 
 interface Topic {
   id: string;
@@ -20,6 +21,8 @@ export default function Home() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const router = useRouter();
 
   const fetchTopics = async () => {
     try {
@@ -43,15 +46,35 @@ export default function Home() {
 
   const deleteTopic = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!confirm("Are you sure? This will delete all words in this topic.")) return;
     try {
       const response = await fetch(`/api/topics/${id}`, { method: "DELETE" });
       if (response.ok) {
         fetchTopics();
+        setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
       }
     } catch (error) {
       console.error("Failed to delete topic:", error);
     }
+  };
+
+  const toggleSelect = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleStudySelected = () => {
+    if (selectedIds.length === 0) return;
+    router.push(`/study?topics=${selectedIds.join(",")}`);
+  };
+
+  const handleQuizSelected = () => {
+    if (selectedIds.length === 0) return;
+    router.push(`/quiz?topics=${selectedIds.join(",")}`);
   };
 
   return (
@@ -69,38 +92,65 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
             <ThemeToggle />
             <LevelBadge />
-            <div className="flex gap-2">
-              <Link 
-                href="/study"
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg font-bold"
-                title="Study all your words"
-              >
-                <BookOpen size={20} />
-                Study All
-              </Link>
-              <Link 
-                href="/study?mode=weak"
-                className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
-                title="Study words you missed"
-              >
-                <BookOpen size={20} />
-                Study Weak
-              </Link>
-              <Link 
-                href="/quiz?mode=weak"
-                className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
-                title="Quiz only words you missed"
-              >
-                <Flame size={20} className="fill-current" />
-                Weak Quiz
-              </Link>
-              <Link 
-                href="/quiz"
-                className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-900 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
-              >
-                <GraduationCap size={20} />
-                Full Quiz
-              </Link>
+            <div className="flex flex-wrap gap-2">
+              {selectedIds.length > 0 ? (
+                <>
+                  <button 
+                    onClick={handleStudySelected}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg font-bold animate-in fade-in slide-in-from-right-4"
+                  >
+                    <BookOpen size={20} />
+                    Study Selected ({selectedIds.length})
+                  </button>
+                  <button 
+                    onClick={handleQuizSelected}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg font-bold animate-in fade-in slide-in-from-right-4"
+                  >
+                    <GraduationCap size={20} />
+                    Quiz Selected ({selectedIds.length})
+                  </button>
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    className="text-gray-500 dark:text-gray-400 font-bold px-4 py-4 hover:underline transition-colors"
+                  >
+                    Clear
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    href="/study"
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg font-bold"
+                    title="Study all your words"
+                  >
+                    <BookOpen size={20} />
+                    Study All
+                  </Link>
+                  <Link 
+                    href="/study?mode=weak"
+                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+                    title="Study words you missed"
+                  >
+                    <BookOpen size={20} />
+                    Study Weak
+                  </Link>
+                  <Link 
+                    href="/quiz?mode=weak"
+                    className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+                    title="Quiz only words you missed"
+                  >
+                    <Flame size={20} className="fill-current" />
+                    Weak Quiz
+                  </Link>
+                  <Link 
+                    href="/quiz"
+                    className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-900 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+                  >
+                    <GraduationCap size={20} />
+                    Full Quiz
+                  </Link>
+                </>
+              )}
               <button
                 onClick={() => setShowForm(true)}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl font-black"
@@ -131,14 +181,22 @@ export default function Home() {
               <Link
                 key={t.id}
                 href={`/topic/${t.id}`}
-                className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-900 hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10 transition-all group relative block"
+                className={`bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border transition-all group relative block ${selectedIds.includes(t.id) ? 'border-blue-500 ring-4 ring-blue-500/10' : 'border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-900 hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10'}`}
               >
-                <button
-                  onClick={(e) => deleteTopic(e, t.id)}
-                  className="absolute top-6 right-6 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="absolute top-6 right-6 flex items-center gap-2">
+                  <button
+                    onClick={(e) => deleteTopic(e, t.id)}
+                    className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button
+                    onClick={(e) => toggleSelect(e, t.id)}
+                    className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${selectedIds.includes(t.id) ? 'bg-blue-600 border-blue-600 text-white scale-110' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-transparent opacity-0 group-hover:opacity-100 hover:border-blue-400'}`}
+                  >
+                    <Check size={18} strokeWidth={3} className={selectedIds.includes(t.id) ? 'scale-100' : 'scale-0 transition-transform'} />
+                  </button>
+                </div>
                 
                 <div className="mb-4 bg-blue-50 dark:bg-blue-900/30 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-all">
                   <Folder size={24} />

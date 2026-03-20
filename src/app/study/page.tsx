@@ -17,6 +17,7 @@ interface Word {
 export default function GeneralStudyPage() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
+  const topicsParam = searchParams.get("topics");
   
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,7 +27,10 @@ export default function GeneralStudyPage() {
   const fetchWords = async () => {
     setLoading(true);
     try {
-      const url = mode === "weak" ? "/api/words/weak" : "/api/words";
+      let url = mode === "weak" ? "/api/words/weak" : "/api/words";
+      if (topicsParam && mode !== "weak") {
+        url = `/api/words?topics=${topicsParam}`;
+      }
       const response = await fetch(url);
       const data = await response.json();
       if (response.ok) {
@@ -41,7 +45,7 @@ export default function GeneralStudyPage() {
 
   useEffect(() => {
     fetchWords();
-  }, [mode]);
+  }, [mode, topicsParam]);
 
   const handleNext = () => {
     setShowDefinition(false);
@@ -80,7 +84,7 @@ export default function GeneralStudyPage() {
         <div className="flex flex-col items-center">
           <h2 className="text-emerald-900 dark:text-emerald-100 font-black flex items-center gap-2 transition-colors">
             {mode === "weak" && <Flame size={16} className="text-red-500 fill-current" />}
-            {mode === "weak" ? "Weak Points Study" : "Full Collection Study"}
+            {mode === "weak" ? "Weak Points Study" : topicsParam ? "Selected Topics Study" : "Full Collection Study"}
           </h2>
           <span className="text-emerald-400 dark:text-emerald-600 text-sm font-bold transition-colors">{currentIndex + 1} / {words.length}</span>
         </div>

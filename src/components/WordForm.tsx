@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Check } from "lucide-react";
 
 interface WordFormProps {
   topicId: string;
@@ -20,6 +20,28 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
   const [definition, setDefinition] = useState(initialData?.definition || "");
   const [example, setExample] = useState(initialData?.example || "");
   const [loading, setLoading] = useState(false);
+  const [keepAdding, setKeepAdding] = useState(false);
+  
+  const wordInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize keepAdding from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("keepAddingWords");
+    if (saved === "true") {
+      setKeepAdding(true);
+    }
+    
+    // Auto-focus on mount
+    if (wordInputRef.current) {
+      wordInputRef.current.focus();
+    }
+  }, []);
+
+  // Update localStorage when keepAdding changes
+  const handleKeepAddingToggle = (checked: boolean) => {
+    setKeepAdding(checked);
+    localStorage.setItem("keepAddingWords", String(checked));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +69,18 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
             body: JSON.stringify({ expToAdd: 10, wordAdded: true }),
           });
         }
+        
         onSuccess();
-        onClose();
+        
+        if (keepAdding && !isEdit) {
+          // Reset form but keep it open
+          setWord("");
+          setDefinition("");
+          setExample("");
+          wordInputRef.current?.focus();
+        } else {
+          onClose();
+        }
       } else {
         alert(`Failed to save: ${data.error || "Unknown error"}`);
       }
@@ -62,7 +94,7 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-white/20 dark:border-gray-800 transition-colors">
+      <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-white/20 dark:border-gray-800 transition-colors animate-in fade-in zoom-in duration-200">
         <button
           onClick={onClose}
           className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
@@ -78,6 +110,7 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
           <div>
             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1">Word</label>
             <input
+              ref={wordInputRef}
               required
               type="text"
               value={word}
@@ -108,6 +141,25 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
               placeholder="Use it in a sentence"
             />
           </div>
+
+          {!initialData && (
+            <div className="flex items-center space-x-3 px-1">
+              <label className="relative flex items-center cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={keepAdding}
+                  onChange={(e) => handleKeepAddingToggle(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center group-hover:border-blue-400">
+                  <Check className={`text-white transition-all ${keepAdding ? 'scale-100' : 'scale-0'}`} size={16} strokeWidth={4} />
+                </div>
+                <span className="ml-3 text-sm font-bold text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors">
+                  Keep adding words
+                </span>
+              </label>
+            </div>
+          )}
 
           <button
             disabled={loading}

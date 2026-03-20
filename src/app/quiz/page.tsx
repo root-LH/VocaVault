@@ -17,6 +17,7 @@ type QuizMode = "flashcard" | "mc-def-to-word" | "mc-word-to-def";
 export default function Quiz() {
   const searchParams = useSearchParams();
   const topicId = searchParams.get("topic");
+  const topicsParam = searchParams.get("topics");
   
   const [words, setWords] = useState<Word[]>([]);
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
@@ -47,6 +48,8 @@ export default function Quiz() {
       
       if (mode === "weak") {
         url = "/api/words/weak";
+      } else if (topicsParam) {
+        url = `/api/words?topics=${topicsParam}`;
       } else if (topicId) {
         url = `/api/topics/${topicId}`;
       }
@@ -56,6 +59,8 @@ export default function Quiz() {
       
       let wordsToQuiz: Word[] = [];
       if (mode === "weak") {
+        wordsToQuiz = Array.isArray(data) ? data : [];
+      } else if (topicsParam) {
         wordsToQuiz = Array.isArray(data) ? data : [];
       } else if (topicId) {
         wordsToQuiz = data.words || [];

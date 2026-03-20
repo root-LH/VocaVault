@@ -121,8 +121,11 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tight transition-colors">{topic.name}</h1>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full transition-colors mt-1">
+                  {topic.words.length} {topic.words.length === 1 ? 'word' : 'words'}
+                </span>
                 <button
                   onClick={() => setShowTopicForm(true)}
                   className="text-gray-400 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2"
