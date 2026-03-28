@@ -1,10 +1,11 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, fork } = require('child_process');
 const fs = require('fs');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 let mainWindow = null;
+let serverProcess = null; // Next.js 서버 프로세스를 전역으로 관리
 
 // --- Logging Setup ---
 const logPath = path.join(app.getPath('userData'), 'app.log');
@@ -14,7 +15,6 @@ function log(message) {
     const timestamp = new Date().toISOString();
     const logMessage = `${timestamp} [${process.type}] ${message}\n`;
     fs.appendFileSync(logPath, logMessage);
-    // Also log to console for terminal visibility
     console.log(message);
   } catch (error) {
     console.error('Failed to write log:', error);
@@ -27,7 +27,6 @@ if (fs.existsSync(logPath)) {
 }
 
 log(`App starting... isDev: ${isDev}`);
-log(`UserData path: ${app.getPath('userData')}`);
 // --- End Logging Setup ---
 
 // --- Database Setup ---
@@ -38,28 +37,18 @@ const prodDbPath = path.join(app.getPath('userData'), dbName);
 const dbPath = isDev ? devDbPath : prodDbPath;
 process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, '\\\\')}`;
 
-log(`Database path: ${dbPath}`);
-
-// In production, copy the DB from the app resources if it doesn't exist in user data
 if (!isDev && !fs.existsSync(dbPath)) {
   const templateDbPath = path.join(projectPrismaPath, 'dev.db');
   if (fs.existsSync(templateDbPath)) {
     try {
       fs.copyFileSync(templateDbPath, dbPath);
-      log('Copied database template to user data.');
     } catch (e) {
       log(`Error copying DB template: ${e.message}`);
     }
-  } else {
-    log('Template DB not found at ' + templateDbPath);
   }
 }
-// --- End of Database Setup ---
 
-
-function runMigrations() {
-  const { fork } = require('child_process');
-  // Using the prisma executable that's unpacked from asar
+async function runMigrations() {
   const prismaPath = isDev 
     ? path.join(app.getAppPath(), 'node_modules', 'prisma', 'build', 'index.js')
     : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'prisma', 'build', 'index.js');
@@ -68,54 +57,36 @@ function runMigrations() {
     ? path.join(app.getAppPath(), 'prisma', 'schema.prisma')
     : path.join(process.resourcesPath, 'prisma', 'schema.prisma');
   
-  log(`Running migrations with DB at: ${dbPath}`);
-  
   const migrateProcess = fork(prismaPath, ['db', 'push', '--schema', schemaPath], {
     env: { ...process.env },
     silent: true,
   });
 
   return new Promise((resolve, reject) => {
-    let stderr = '';
-    migrateProcess.stdout.on('data', (data) => log(`Migration log: ${data}`));
-    migrateProcess.stderr.on('data', (data) => {
-      stderr += data.toString();
-      log(`Migration error: ${data}`);
-    });
-
     migrateProcess.on('close', (code) => {
-      if (code === 0) {
-        log('Prisma migrations applied successfully.');
-        resolve();
-      } else {
-        log(`Prisma migrations failed with code ${code}`);
-        reject(new Error(`Prisma migrations failed. Details: \n${stderr}`));
-      }
+      if (code === 0) resolve();
+      else reject(new Error(`Prisma migrations failed with code ${code}`));
     });
   });
 }
 
 function launchDevServer() {
-  const nextProcess = spawn('npm.cmd', ['run', 'dev'], { stdio: 'pipe' });
+  // Windows에서는 npm.cmd, macOS/Linux에서는 npm
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  serverProcess = spawn(npmCmd, ['run', 'dev'], { stdio: 'pipe' });
 
-  nextProcess.stdout.on('data', (data) => {
-    console.log(`Next.js: ${data}`);
+  serverProcess.stdout.on('data', (data) => {
     if (data.toString().includes('ready in')) {
       if (!mainWindow) createWindow();
     }
   });
 
-  nextProcess.stderr.on('data', (data) => {
-    console.error(`Next.js Error: ${data}`);
+  serverProcess.on('error', (err) => {
+    log(`Dev server error: ${err.message}`);
   });
-
-  app.on('quit', () => nextProcess.kill());
 }
 
 function launchProdServer() {
-    const { fork } = require('child_process');
-    // Determine the path to the server.
-    // When packaged, we use extraResources, so the server is in resources/standalone
     let serverPath;
     if (app.isPackaged) {
         serverPath = path.join(process.resourcesPath, 'standalone', 'server.js');
@@ -123,87 +94,47 @@ function launchProdServer() {
         serverPath = path.join(app.getAppPath(), '.next/standalone/server.js');
     }
     
-    log(`Launching Next.js server from: ${serverPath}`);
-
     if (!fs.existsSync(serverPath)) {
-        log(`CRITICAL ERROR: Server file not found at ${serverPath}`);
-        dialog.showErrorBox('Startup Error', `Server file not found at:\n${serverPath}\n\nPlease reinstall the application.`);
+        dialog.showErrorBox('Startup Error', `Server file not found at ${serverPath}`);
         return;
     }
 
-    const prodServerProcess = fork(serverPath, [], {
+    serverProcess = fork(serverPath, [], {
         env: {
             ...process.env,
             PORT: '3000',
-            HOSTNAME: 'localhost', // Explicitly set hostname
+            HOSTNAME: 'localhost',
         },
         silent: true,
     });
 
-    prodServerProcess.stdout.on('data', (data) => log(`Server: ${data}`));
-    prodServerProcess.stderr.on('data', (data) => log(`Server Error: ${data}`));
-
-    prodServerProcess.on('exit', (code, signal) => {
-        log(`Next.js server process exited with code ${code} and signal ${signal}`);
-        if (code !== 0) {
-             dialog.showErrorBox('Server Error', `The application server stopped unexpectedly (Code: ${code}).\nCheck ${logPath} for details.`);
-        }
-    });
-    
-    prodServerProcess.on('error', (err) => {
-        log(`Failed to spawn server process: ${err.message}`);
-        dialog.showErrorBox('Server Start Error', `Failed to start server process:\n${err.message}`);
+    serverProcess.on('exit', (code, signal) => {
+        log(`Next.js server exited with code ${code}`);
     });
 
-    app.on('quit', () => {
-        log('App quitting, killing server process...');
-        prodServerProcess.kill();
-    });
-
-    // Start polling for the server
     checkServerReady();
 }
-
-let checkServerRetries = 0;
-const MAX_RETRIES = 60; // 30 seconds (60 * 500ms)
 
 function checkServerReady() {
   const { net } = require('electron');
   const request = net.request('http://localhost:3000');
 
   request.on('response', (response) => {
-    log(`Server responded with status: ${response.statusCode}`);
     if (response.statusCode === 200) {
-        log('Server is ready! Creating window...');
         if (!mainWindow) createWindow();
     } else {
-        // Retry if not 200 (though usually it is 200 if connected)
-        log(`Server not ready (Status ${response.statusCode}), retrying...`);
-        retryServerCheck();
+        setTimeout(checkServerReady, 500);
     }
   });
 
-  request.on('error', (error) => {
-    // Server not ready yet
-    // log(`Server check failed: ${error.message}`); // Too noisy
-    retryServerCheck();
+  request.on('error', () => {
+    setTimeout(checkServerReady, 500);
   });
 
   request.end();
 }
 
-function retryServerCheck() {
-    checkServerRetries++;
-    if (checkServerRetries > MAX_RETRIES) {
-        log('Server failed to start within timeout.');
-        dialog.showErrorBox('Startup Timeout', 'The application server failed to start within the expected time.\nCheck logs for details.');
-        return;
-    }
-    setTimeout(checkServerReady, 500);
-}
-
 function createWindow() {
-  log('Creating main window...');
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -215,21 +146,29 @@ function createWindow() {
   });
 
   mainWindow.loadURL('http://localhost:3000');
-  
-  // In production, remove menu bar for cleaner look, or keep it.
   if (!isDev) mainWindow.setMenuBarVisibility(false);
-  
-  if (isDev) mainWindow.webContents.openDevTools();
-  
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      log(`Failed to load window content: ${errorDescription} (${errorCode})`);
-  });
-
   mainWindow.on('closed', () => (mainWindow = null));
 }
 
+// 종료 시 프로세스 확실하게 죽이기
+function killServer() {
+  if (serverProcess) {
+    log('Killing server process...');
+    try {
+      // Windows의 경우 트리 구조로 죽여야 할 수도 있음
+      if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', serverProcess.pid, '/f', '/t']);
+      } else {
+        serverProcess.kill('SIGTERM');
+      }
+    } catch (e) {
+      log(`Error killing server: ${e.message}`);
+    }
+    serverProcess = null;
+  }
+}
+
 app.whenReady().then(async () => {
-  log('App ready event fired.');
   try {
     if (isDev) {
       await runMigrations();
@@ -238,20 +177,35 @@ app.whenReady().then(async () => {
       launchProdServer();
     }
   } catch (e) {
-    dialog.showErrorBox('App Initialization Error', e.stack || e.toString());
-    log(`Failed to initialize app: ${e.stack}`);
+    log(`Init error: ${e.message}`);
     app.quit();
   }
 });
 
+// 모든 창이 닫히면 앱 종료 (macOS 포함)
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  log('All windows closed, killing server and quitting...');
+  killServer();
+  app.quit();
+});
+
+// 앱이 종료될 때 서버 프로세스 정리
+app.on('will-quit', () => {
+  killServer();
+});
+
+// 앱이 완전히 종료되기 직전에 마지막으로 프로세스 정리
+app.on('before-quit', () => {
+  killServer();
 });
 
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
+});
+
+// 예기치 못한 종료 시에도 정리 시도
+process.on('exit', () => {
+  killServer();
 });

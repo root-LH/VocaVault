@@ -13,7 +13,7 @@ export async function POST(
       where: { id },
       data: {
         correctCount: { increment: isCorrect ? 1 : 0 },
-        missedCount: { increment: isCorrect ? 0 : 1 },
+        missedCount: isCorrect ? 0 : { increment: 1 },
       },
     });
 
