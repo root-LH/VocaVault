@@ -149,6 +149,13 @@ export default function Home() {
                     <GraduationCap size={20} />
                     Full Quiz
                   </Link>
+                  <Link 
+                    href="/dictionary"
+                    className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+                  >
+                    <BookOpen size={20} />
+                    Dictionary
+                  </Link>
                 </>
               )}
               <button
