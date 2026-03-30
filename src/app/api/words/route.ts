@@ -20,6 +20,13 @@ export async function GET(request: Request) {
 
     const words = await prisma.word.findMany({
       where: whereClause,
+      include: {
+        topic: {
+          select: {
+            name: true,
+          }
+        }
+      },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(words);

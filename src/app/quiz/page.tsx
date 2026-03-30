@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Eye, RefreshCw, Trophy, CheckCircle2, XCircle, Layout, Check, X, ArrowLeft, BookOpen, Zap } from "lucide-react";
+import { ChevronLeft, RefreshCw, Trophy, CheckCircle2, XCircle, Layout, Check, X, ArrowLeft, BookOpen, Zap, Eye } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -85,17 +85,23 @@ function QuizContent() {
 
   useEffect(() => {
     fetchWords();
-  }, [topicId, searchParams.get("mode")]);
+  }, [topicId, searchParams.get("mode"), topicsParam]);
 
   const options = useMemo(() => {
     if (!quizMode || quizMode === "flashcard" || finalWords.length === 0 || isFinished) return [];
     
     const correctWord = finalWords[currentIndex];
-    const others = words.filter(w => w.id !== correctWord.id);
-    const shuffledOthers = [...others].sort(() => Math.random() - 0.5);
-    const selectedOthers = shuffledOthers.slice(0, 3);
     
-    return [correctWord, ...selectedOthers].sort(() => Math.random() - 0.5);
+    // 같은 단어명을 가진 다른 토픽의 단어들도 '정답'으로 간주하기 위해 필터링에서 제외
+    const currentWordName = correctWord.word.toLowerCase().trim();
+    
+    // 오답 후보군: 단어명이 다른 것들만 추출
+    const wrongOptions = words.filter(w => w.word.toLowerCase().trim() !== currentWordName);
+    const shuffledWrong = [...wrongOptions].sort(() => Math.random() - 0.5);
+    const selectedWrong = shuffledWrong.slice(0, 3);
+    
+    // 최종 옵션은 현재 문제 단어 + 3개의 다른 단어
+    return [correctWord, ...selectedWrong].sort(() => Math.random() - 0.5);
   }, [quizMode, currentIndex, finalWords, words, isFinished]);
 
   const recordResult = async (wordId: string, isCorrect: boolean) => {
@@ -121,7 +127,11 @@ function QuizContent() {
   const handleMultipleChoice = (wordId: string) => {
     if (selectedOptionId) return;
     const correctWord = finalWords[currentIndex];
-    const isCorrect = wordId === correctWord.id;
+    const selectedOption = options.find(o => o.id === wordId);
+    
+    // 중요: 단어명이 같으면 ID가 달라도 정답으로 인정 (다른 토픽의 같은 단어 처리)
+    const isCorrect = selectedOption?.word.toLowerCase().trim() === correctWord.word.toLowerCase().trim();
+    
     setSelectedOptionId(wordId);
 
     recordResult(correctWord.id, isCorrect);
@@ -146,7 +156,6 @@ function QuizContent() {
 
   const finishQuiz = async () => {
     const totalCorrect = correctWords.length;
-    // Multiple Choice = 15xp, Flashcard = 10xp
     const exp = totalCorrect * (quizMode === "flashcard" ? 10 : 15);
     setExpGained(exp);
     setIsFinished(true);
@@ -328,7 +337,9 @@ function QuizContent() {
             <div className="grid grid-cols-1 gap-4">
               {options.map((option) => {
                 const isSelected = selectedOptionId === option.id;
-                const isCorrectOption = option.id === currentWord.id;
+                // 중요: 단어명이 같으면 정답 옵션으로 간주
+                const isCorrectOption = option.word.toLowerCase().trim() === currentWord.word.toLowerCase().trim();
+                
                 let buttonStyle = "bg-white text-gray-700 border-4 border-white hover:border-blue-100 shadow-sm";
                 if (selectedOptionId) {
                   if (isCorrectOption) buttonStyle = "bg-green-500 text-white border-green-500 shadow-green-100 scale-[1.02]";
