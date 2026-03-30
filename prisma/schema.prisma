@@ -26,8 +26,14 @@ model Word {
   example      String?
   topicId      String
   topic        Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  
+  // 학습 통계 및 SRS 필드
   correctCount Int      @default(0)
   missedCount  Int      @default(0)
+  interval     Int      @default(0)      // 현재 복습 간격 (단위: 일)
+  easeFactor   Float    @default(2.5)    // 난이도 가중치 (기본값 2.5)
+  nextReviewAt DateTime @default(now())  // 다음 복습 예정 일시
+  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -50,6 +50,8 @@ function QuizContent() {
       
       if (mode === "weak") {
         url = "/api/words/weak";
+      } else if (mode === "review") {
+        url = "/api/words/review";
       } else if (topicsParam) {
         url = `/api/words?topics=${topicsParam}`;
       } else if (topicId) {
@@ -60,7 +62,7 @@ function QuizContent() {
       const data = await response.json();
       
       let wordsToQuiz: Word[] = [];
-      if (mode === "weak") {
+      if (mode === "weak" || mode === "review") {
         wordsToQuiz = Array.isArray(data) ? data : [];
       } else if (topicsParam) {
         wordsToQuiz = Array.isArray(data) ? data : [];

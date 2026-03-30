@@ -19,6 +19,7 @@ interface Topic {
 
 export default function Home() {
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [reviewCount, setReviewCount] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -26,6 +27,7 @@ export default function Home() {
 
   const fetchTopics = async () => {
     try {
+      // 토픽 가져오기
       const response = await fetch("/api/topics");
       const data = await response.json();
       if (response.ok && Array.isArray(data)) {
@@ -33,8 +35,15 @@ export default function Home() {
       } else {
         setTopics([]);
       }
+
+      // 복습 단어 개수 가져오기
+      const reviewRes = await fetch("/api/words/review");
+      const reviewData = await reviewRes.json();
+      if (reviewRes.ok && Array.isArray(reviewData)) {
+        setReviewCount(reviewData.length);
+      }
     } catch (error) {
-      console.error("Error fetching topics:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -93,6 +102,21 @@ export default function Home() {
             <ThemeToggle />
             <LevelBadge />
             <div className="flex flex-wrap gap-2">
+              {reviewCount > 0 && (
+                <Link 
+                  href="/quiz?mode=review"
+                  className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-4 rounded-2xl transition-all shadow-xl font-black animate-bounce-slow"
+                  title="Practice words scheduled for review"
+                >
+                  <div className="bg-white/20 p-1.5 rounded-lg">
+                    <Flame size={20} className="fill-current" />
+                  </div>
+                  <div className="flex flex-col items-start leading-none">
+                    <span className="text-[10px] uppercase tracking-tighter opacity-80">Scheduled Review</span>
+                    <span className="text-lg">{reviewCount} Words Due</span>
+                  </div>
+                </Link>
+              )}
               {selectedIds.length > 0 ? (
                 <>
                   <button 
@@ -148,13 +172,6 @@ export default function Home() {
                   >
                     <GraduationCap size={20} />
                     Full Quiz
-                  </Link>
-                  <Link 
-                    href="/dictionary"
-                    className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
-                  >
-                    <BookOpen size={20} />
-                    Dictionary
                   </Link>
                 </>
               )}
