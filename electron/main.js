@@ -170,8 +170,10 @@ function killServer() {
 
 app.whenReady().then(async () => {
   try {
+    // 개발/배포 환경 상관없이 항상 DB 마이그레이션(구조 업데이트) 실행
+    await runMigrations();
+    
     if (isDev) {
-      await runMigrations();
       launchDevServer();
     } else {
       launchProdServer();
