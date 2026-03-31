@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check } from "lucide-react";
+import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check, Book } from "lucide-react";
 import Link from "next/link";
 import TopicForm from "@/components/TopicForm";
 import LevelBadge from "@/components/LevelBadge";
@@ -175,6 +175,13 @@ export default function Home() {
                   </Link>
                 </>
               )}
+              <Link 
+                href="/dictionary"
+                className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-purple-900 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50 px-6 py-4 rounded-2xl transition-all shadow-sm font-bold"
+              >
+                <Book size={20} />
+                Dictionary
+              </Link>
               <button
                 onClick={() => setShowForm(true)}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl font-black"

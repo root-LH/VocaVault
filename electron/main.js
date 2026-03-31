@@ -35,13 +35,31 @@ const projectPrismaPath = isDev ? path.join(app.getAppPath(), 'prisma') : path.j
 const devDbPath = path.join(projectPrismaPath, dbName);
 const prodDbPath = path.join(app.getPath('userData'), dbName);
 const dbPath = isDev ? devDbPath : prodDbPath;
-process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, '\\\\')}`;
+// Prisma URL for SQLite on Windows needs special formatting
+const formattedDbPath = dbPath.replace(/\\/g, '/');
+process.env.DATABASE_URL = `file:${formattedDbPath}`;
+
+// --- Prisma Engine Setup (ASAR Unpacked) ---
+const prismaEnginesPath = isDev 
+  ? path.join(app.getAppPath(), 'node_modules', '@prisma', 'engines')
+  : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@prisma', 'engines');
+
+const queryEnginePath = path.join(prismaEnginesPath, 'query_engine-windows.dll.node');
+const schemaEnginePath = path.join(prismaEnginesPath, 'schema-engine-windows.exe');
+
+process.env.PRISMA_QUERY_ENGINE_LIBRARY = queryEnginePath;
+process.env.PRISMA_SCHEMA_ENGINE_BINARY = schemaEnginePath;
+
+log(`Prisma Query Engine Path: ${queryEnginePath}`);
+log(`Prisma Schema Engine Path: ${schemaEnginePath}`);
+// --- End Prisma Engine Setup ---
 
 if (!isDev && !fs.existsSync(dbPath)) {
   const templateDbPath = path.join(projectPrismaPath, 'dev.db');
   if (fs.existsSync(templateDbPath)) {
     try {
       fs.copyFileSync(templateDbPath, dbPath);
+      log(`Copied template DB to ${dbPath}`);
     } catch (e) {
       log(`Error copying DB template: ${e.message}`);
     }
@@ -49,23 +67,50 @@ if (!isDev && !fs.existsSync(dbPath)) {
 }
 
 async function runMigrations() {
-  const prismaPath = isDev 
-    ? path.join(app.getAppPath(), 'node_modules', 'prisma', 'build', 'index.js')
-    : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'prisma', 'build', 'index.js');
+  let prismaPath;
+  try {
+    prismaPath = require.resolve('prisma/build/index.js');
+  } catch (e) {
+    // fallback for packaged app
+    prismaPath = isDev 
+      ? path.join(app.getAppPath(), 'node_modules', 'prisma', 'build', 'index.js')
+      : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'prisma', 'build', 'index.js');
+  }
 
   const schemaPath = isDev 
     ? path.join(app.getAppPath(), 'prisma', 'schema.prisma')
     : path.join(process.resourcesPath, 'prisma', 'schema.prisma');
   
-  const migrateProcess = fork(prismaPath, ['db', 'push', '--schema', schemaPath], {
+  log(`Prisma Path: ${prismaPath}`);
+  log(`Schema Path: ${schemaPath}`);
+
+  if (!fs.existsSync(prismaPath)) {
+    log(`Prisma path not found: ${prismaPath}`);
+    throw new Error('Database migration tool missing.');
+  }
+  
+  const migrateProcess = fork(prismaPath, ['db', 'push', '--schema', schemaPath, '--accept-data-loss'], {
     env: { ...process.env },
     silent: true,
   });
 
   return new Promise((resolve, reject) => {
+    let output = '';
+    migrateProcess.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    migrateProcess.stderr.on('data', (data) => {
+      output += data.toString();
+    });
+
     migrateProcess.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Prisma migrations failed with code ${code}`));
+      if (code === 0) {
+        log('Prisma migrations successful');
+        resolve();
+      } else {
+        log(`Prisma migrations failed with code ${code}. Output: ${output}`);
+        reject(new Error(`Prisma migrations failed with code ${code}`));
+      }
     });
   });
 }
@@ -99,12 +144,14 @@ function launchProdServer() {
         return;
     }
 
+    const serverDir = path.dirname(serverPath);
     serverProcess = fork(serverPath, [], {
         env: {
             ...process.env,
             PORT: '3000',
             HOSTNAME: 'localhost',
         },
+        cwd: serverDir,
         silent: true,
     });
 
