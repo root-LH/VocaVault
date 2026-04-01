@@ -30,10 +30,14 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, description } = await request.json();
+    const { name, description, folderId } = await request.json();
     const topic = await prisma.topic.update({
       where: { id: params.id },
-      data: { name, description }
+      data: { 
+        name, 
+        description,
+        folderId: folderId === undefined ? undefined : (folderId || null)
+      }
     });
     return NextResponse.json(topic);
   } catch (error) {

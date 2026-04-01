@@ -3,20 +3,18 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
-interface TopicFormProps {
+interface FolderFormProps {
   onClose: () => void;
   onSuccess: () => void;
-  folderId?: string | null;
+  parentId?: string | null;
   initialData?: {
     id: string;
     name: string;
-    description: string | null;
   };
 }
 
-export default function TopicForm({ onClose, onSuccess, folderId, initialData }: TopicFormProps) {
+export default function FolderForm({ onClose, onSuccess, parentId, initialData }: FolderFormProps) {
   const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(initialData?.description || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +22,7 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
     setLoading(true);
 
     try {
-      const url = initialData ? `/api/topics/${initialData.id}` : "/api/topics";
+      const url = initialData ? `/api/folders/${initialData.id}` : "/api/folders";
       const method = initialData ? "PATCH" : "POST";
       
       const response = await fetch(url, {
@@ -32,8 +30,7 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           name, 
-          description,
-          folderId: folderId || null
+          parentId: parentId || null 
         }),
       });
 
@@ -42,7 +39,7 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
         onClose();
       } else {
         const data = await response.json();
-        alert(data.error || `Failed to ${initialData ? 'update' : 'create'} topic`);
+        alert(data.error || `Failed to ${initialData ? 'update' : 'create'} folder`);
       }
     } catch (error) {
       alert("Network error occurred");
@@ -62,29 +59,20 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
         </button>
 
         <h2 className="text-3xl font-black mb-8 text-gray-900 dark:text-white tracking-tight">
-          {initialData ? "Edit Topic" : "New Topic"}
+          {initialData ? "Edit Folder" : "New Folder"}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1">Topic Name</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1">Folder Name</label>
             <input
               required
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white"
-              placeholder="e.g. Travel, Business, Food"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1">Description (Optional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white min-h-[120px] resize-none"
-              placeholder="What's this collection about?"
+              placeholder="e.g. Languages, Science, Personal"
+              autoFocus
             />
           </div>
 
@@ -93,7 +81,7 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-black py-5 rounded-2xl transition-all shadow-lg hover:shadow-blue-500/25 mt-4"
           >
-            {loading ? (initialData ? "Updating..." : "Creating...") : (initialData ? "Update Topic" : "Create Topic")}
+            {loading ? (initialData ? "Updating..." : "Creating...") : (initialData ? "Update Folder" : "Create Folder")}
           </button>
         </form>
       </div>

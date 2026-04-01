@@ -22,14 +22,18 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, folderId } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Topic name is required" }, { status: 400 });
     }
 
     const newTopic = await prisma.topic.create({
-      data: { name, description },
+      data: { 
+        name, 
+        description,
+        folderId: folderId || null
+      },
     });
 
     return NextResponse.json(newTopic);
