@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, RefreshCw, Trophy, CheckCircle2, XCircle, Layout, Check, X, ArrowLeft, BookOpen, Zap, Eye } from "lucide-react";
+import { ChevronLeft, RefreshCw, Trophy, CheckCircle2, XCircle, Layout, Check, X, ArrowLeft, BookOpen, Zap, Eye, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -34,6 +34,13 @@ function QuizContent() {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [expGained, setExpGained] = useState(0);
 
+  const [sourceTopicName, setSourceTopicName] = useState<string>("");
+  const [selectedMissedIds, setSelectedMissedIds] = useState<string[]>([]);
+  const [newTopicName, setNewTopicName] = useState<string>("");
+  const [isSavingTopic, setIsSavingTopic] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [createdTopicId, setCreatedTopicId] = useState<string | null>(null);
+
   const fetchWords = async () => {
     setLoading(true);
     setIsFinished(false);
@@ -44,6 +51,11 @@ function QuizContent() {
     setMissedWords([]);
     setSelectedOptionId(null);
     setExpGained(0);
+    setNewTopicName("");
+    setIsSavingTopic(false);
+    setSaveSuccess(false);
+    setCreatedTopicId(null);
+    setSelectedMissedIds([]);
     try {
       const mode = searchParams.get("mode");
       let url = "/api/words";
@@ -62,14 +74,21 @@ function QuizContent() {
       const data = await response.json();
       
       let wordsToQuiz: Word[] = [];
-      if (mode === "weak" || mode === "review") {
+      if (mode === "weak") {
         wordsToQuiz = Array.isArray(data) ? data : [];
+        setSourceTopicName("Weak Words");
+      } else if (mode === "review") {
+        wordsToQuiz = Array.isArray(data) ? data : [];
+        setSourceTopicName("Review Session");
       } else if (topicsParam) {
         wordsToQuiz = Array.isArray(data) ? data : [];
+        setSourceTopicName("Multiple Topics");
       } else if (topicId) {
         wordsToQuiz = data.words || [];
+        setSourceTopicName(data.name || "Topic");
       } else {
         wordsToQuiz = Array.isArray(data) ? data : [];
+        setSourceTopicName("All Words");
       }
 
       setWords(wordsToQuiz.sort(() => Math.random() - 0.5));
@@ -121,9 +140,17 @@ function QuizContent() {
   const handleFlashcardChoice = (isCorrect: boolean) => {
     const currentWord = finalWords[currentIndex];
     recordResult(currentWord.id, isCorrect);
-    if (isCorrect) setCorrectWords(prev => [...prev, currentWord]);
-    else setMissedWords(prev => [...prev, currentWord]);
-    goToNext();
+    
+    let nextCorrect = correctWords;
+    let nextMissed = missedWords;
+    if (isCorrect) {
+      nextCorrect = [...correctWords, currentWord];
+      setCorrectWords(nextCorrect);
+    } else {
+      nextMissed = [...missedWords, currentWord];
+      setMissedWords(nextMissed);
+    }
+    goToNext(nextCorrect, nextMissed);
   };
 
   const handleMultipleChoice = (wordId: string) => {
@@ -138,29 +165,45 @@ function QuizContent() {
 
     recordResult(correctWord.id, isCorrect);
 
-    if (isCorrect) setCorrectWords(prev => [...prev, correctWord]);
-    else setMissedWords(prev => [...prev, correctWord]);
+    let nextCorrect = correctWords;
+    let nextMissed = missedWords;
+    if (isCorrect) {
+      nextCorrect = [...correctWords, correctWord];
+      setCorrectWords(nextCorrect);
+    } else {
+      nextMissed = [...missedWords, correctWord];
+      setMissedWords(nextMissed);
+    }
 
     setTimeout(() => {
-      goToNext();
+      goToNext(nextCorrect, nextMissed);
       setSelectedOptionId(null);
     }, 1500);
   };
 
-  const goToNext = () => {
+  const goToNext = (updatedCorrect = correctWords, updatedMissed = missedWords) => {
     setShowDefinition(false);
     if (currentIndex === finalWords.length - 1) {
-      finishQuiz();
+      finishQuiz(updatedCorrect, updatedMissed);
     } else {
       setCurrentIndex((prev) => prev + 1);
     }
   };
 
-  const finishQuiz = async () => {
-    const totalCorrect = correctWords.length;
+  const finishQuiz = async (finalCorrect: Word[], finalMissed: Word[]) => {
+    const totalCorrect = finalCorrect.length;
     const exp = totalCorrect * (quizMode === "flashcard" ? 10 : 15);
     setExpGained(exp);
     setIsFinished(true);
+
+    setSelectedMissedIds(finalMissed.map(w => w.id));
+    const dateStr = new Date().toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    setNewTopicName(`Incorrect Words (${sourceTopicName || "Quiz"} - ${dateStr})`);
 
     try {
       await fetch("/api/stats", {
@@ -170,6 +213,50 @@ function QuizContent() {
       });
     } catch (error) {
       console.error("Failed to save stats", error);
+    }
+  };
+
+  const toggleWordSelection = (wordId: string) => {
+    setSelectedMissedIds(prev =>
+      prev.includes(wordId)
+        ? prev.filter(id => id !== wordId)
+        : [...prev, wordId]
+    );
+  };
+
+  const handleSaveToNewTopic = async () => {
+    if (selectedMissedIds.length === 0 || !newTopicName.trim() || isSavingTopic) return;
+    setIsSavingTopic(true);
+    setSaveSuccess(false);
+    setCreatedTopicId(null);
+    try {
+      const selectedWords = missedWords.filter(w => selectedMissedIds.includes(w.id));
+      
+      const response = await fetch("/api/topics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newTopicName.trim(),
+          description: `Created from missed words during quiz of ${sourceTopicName || "quiz session"}.`,
+          words: selectedWords.map(w => ({
+            word: w.word,
+            definition: w.definition,
+            example: w.example,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save topic");
+      }
+
+      const data = await response.json();
+      setCreatedTopicId(data.id);
+      setSaveSuccess(true);
+    } catch (error) {
+      console.error("Failed to save topic with words", error);
+    } finally {
+      setIsSavingTopic(false);
     }
   };
 
@@ -277,17 +364,117 @@ function QuizContent() {
               </div>
             </section>
             <section>
-              <h3 className="flex items-center gap-2 text-red-500 font-black text-xl mb-4 uppercase tracking-wider"><XCircle size={24} /> Missed ({missedWords.length})</h3>
-              <div className="space-y-3">
-                {missedWords.map(w => (
-                  <div key={w.id} className="bg-white p-5 rounded-2xl shadow-sm border border-red-50">
-                    <h4 className="font-bold text-gray-900">{w.word}</h4>
-                    <p className="text-red-400 text-xs">{w.definition}</p>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="flex items-center gap-2 text-red-500 font-black text-xl uppercase tracking-wider"><XCircle size={24} /> Missed ({missedWords.length})</h3>
+                {missedWords.length > 0 && (
+                  <div className="flex gap-3 text-xs bg-white/60 backdrop-blur-sm border border-red-100 rounded-xl px-3 py-1.5 shadow-sm">
+                    <button 
+                      onClick={() => setSelectedMissedIds(missedWords.map(w => w.id))}
+                      className="text-blue-600 font-bold hover:text-blue-800 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button 
+                      onClick={() => setSelectedMissedIds([])}
+                      className="text-gray-500 font-bold hover:text-gray-700 transition-colors"
+                    >
+                      Deselect All
+                    </button>
                   </div>
-                ))}
+                )}
+              </div>
+              <div className="space-y-3">
+                {missedWords.map(w => {
+                  const isSelected = selectedMissedIds.includes(w.id);
+                  return (
+                    <div 
+                      key={w.id} 
+                      onClick={() => toggleWordSelection(w.id)}
+                      className={`p-5 rounded-2xl shadow-sm border transition-all cursor-pointer flex items-start gap-4 ${
+                        isSelected 
+                          ? "bg-red-50/20 border-red-200 scale-[1.01]" 
+                          : "bg-white border-red-50 opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={() => {}} // Handled by parent div click
+                        className="mt-1 rounded text-red-500 focus:ring-red-400 h-4 w-4 accent-red-500 cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900">{w.word}</h4>
+                        <p className="text-red-400 text-xs">{w.definition}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </div>
+
+          {missedWords.length > 0 && (
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-50 w-full mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
+                  <Save size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">틀린 단어 저장하기</h3>
+                  <p className="text-gray-400 text-sm">선택한 틀린 단어들로 새로운 단어장을 만듭니다.</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label htmlFor="newTopicName" className="block text-xs font-black text-blue-900 uppercase tracking-widest mb-2 ml-2">
+                    단어장 이름
+                  </label>
+                  <input
+                    type="text"
+                    id="newTopicName"
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    placeholder="단어장 이름을 입력하세요..."
+                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl px-6 py-4 text-gray-900 font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleSaveToNewTopic}
+                  disabled={selectedMissedIds.length === 0 || !newTopicName.trim() || isSavingTopic}
+                  className="w-full md:w-auto bg-blue-600 disabled:bg-gray-200 text-white disabled:text-gray-400 px-8 py-4 rounded-2xl font-bold shadow-lg disabled:shadow-none hover:bg-blue-700 transition-all flex items-center justify-center gap-2 h-[58px]"
+                >
+                  {isSavingTopic ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      저장 중...
+                    </>
+                  ) : saveSuccess ? (
+                    <>
+                      <Check size={20} />
+                      저장 완료!
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      {selectedMissedIds.length}개 단어 저장
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {saveSuccess && createdTopicId && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-2xl flex justify-between items-center text-green-700 font-medium text-sm animate-in fade-in duration-300">
+                  <span>새 단어장 "{newTopicName}"이 생성되었습니다!</span>
+                  <Link href={`/topic/${createdTopicId}`} className="text-green-700 font-bold underline hover:text-green-800 flex items-center gap-1">
+                    단어장으로 이동 <ChevronLeft className="rotate-180" size={16} />
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-4 justify-center">
             <button onClick={fetchWords} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"><RefreshCw size={20} /> Try Again</button>

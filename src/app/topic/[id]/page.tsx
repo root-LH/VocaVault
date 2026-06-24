@@ -21,6 +21,7 @@ interface Topic {
   id: string;
   name: string;
   description: string | null;
+  folderId: string | null;
   words: Word[];
 }
 
@@ -128,12 +129,14 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
   if (loading) return <div className="min-h-screen flex items-center justify-center dark:bg-gray-950 dark:text-white transition-colors">Loading topic...</div>;
   if (!topic) return <div className="min-h-screen flex items-center justify-center dark:bg-gray-950 dark:text-white transition-colors">Topic not found.</div>;
 
+  const backHref = topic.folderId ? `/?folder=${topic.folderId}` : "/";
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 p-8 md:p-24 transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         <header className="mb-12">
           <div className="flex justify-between items-center mb-8">
-            <Link href="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-2 font-bold transition-all">
+            <Link href={backHref} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-2 font-bold transition-all">
               <ArrowLeft size={20} />
               Back to Topics
             </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check, Book, FolderPlus, ArrowLeft, MoreVertical, Move } from "lucide-react";
 import Link from "next/link";
 import TopicForm from "@/components/TopicForm";
@@ -8,7 +8,7 @@ import FolderForm from "@/components/FolderForm";
 import MoveModal from "@/components/MoveModal";
 import LevelBadge from "@/components/LevelBadge";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Topic {
   id: string;
@@ -40,7 +40,7 @@ interface MoveState {
   itemName: string;
 }
 
-export default function Home() {
+function HomeContent() {
   const [folders, setFolders] = useState<FolderData[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -54,6 +54,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchData = async (folderId: string | null = currentFolderId) => {
     setLoading(true);
@@ -83,20 +84,43 @@ export default function Home() {
     fetchData();
   }, [currentFolderId]);
 
+  useEffect(() => {
+    const folderId = searchParams.get('folder');
+    if (folderId !== currentFolderId) {
+      setCurrentFolderId(folderId);
+      if (folderId) {
+        // Fetch breadcrumbs for this folder to restore state
+        fetch(`/api/folders/${folderId}/breadcrumbs`)
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) {
+              setBreadcrumbs(data);
+            }
+          })
+          .catch(err => console.error("Failed to fetch breadcrumbs:", err));
+      } else {
+        setBreadcrumbs([]);
+      }
+    }
+  }, [searchParams]);
+
   const navigateToFolder = (folder: FolderData) => {
     setCurrentFolderId(folder.id);
     setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
+    router.push(`/?folder=${folder.id}`, { scroll: false });
   };
 
   const navigateToBreadcrumb = (index: number) => {
     if (index === -1) {
       setCurrentFolderId(null);
       setBreadcrumbs([]);
+      router.push(`/`, { scroll: false });
     } else {
       const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
       const target = newBreadcrumbs[newBreadcrumbs.length - 1];
       setCurrentFolderId(target.id);
       setBreadcrumbs(newBreadcrumbs);
+      router.push(`/?folder=${target.id}`, { scroll: false });
     }
   };
 
@@ -456,5 +480,13 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center dark:bg-gray-950 dark:text-white transition-colors">Loading your Vault...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
