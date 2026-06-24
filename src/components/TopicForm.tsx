@@ -27,14 +27,15 @@ export default function TopicForm({ onClose, onSuccess, folderId, initialData }:
       const url = initialData ? `/api/topics/${initialData.id}` : "/api/topics";
       const method = initialData ? "PATCH" : "POST";
       
+      const payload: any = { name, description };
+      if (!initialData) {
+        payload.folderId = folderId || null;
+      }
+      
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name, 
-          description,
-          folderId: folderId || null
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {

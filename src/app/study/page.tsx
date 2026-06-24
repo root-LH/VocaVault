@@ -49,6 +49,37 @@ function StudyContent() {
     fetchWords();
   }, [mode, topicsParam]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept keys if the user is typing in an input or textarea
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return;
+      }
+
+      if (e.code === 'ArrowRight' || e.code === 'Space') {
+        e.preventDefault();
+        const btn = document.querySelector('button:last-child') as HTMLButtonElement | null;
+        if (btn) btn.click();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        const btn = document.querySelector('button:first-child') as HTMLButtonElement | null;
+        if (btn) btn.click();
+      } else if (e.code === 'KeyV' || e.code === 'Enter') {
+        const btn = document.querySelector('.cursor-pointer') as HTMLElement | null;
+        if (btn) btn.click();
+      } else if (e.code === 'KeyS') {
+        const speakerBtn = document.querySelector('button[title*="Listen"]') as HTMLButtonElement | null;
+        if (speakerBtn) speakerBtn.click();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const handleNext = () => {
     setShowDefinition(false);
     setCurrentIndex((prev) => (prev + 1) % words.length);
@@ -151,23 +182,6 @@ function StudyContent() {
           </button>
         </div>
       </div>
-
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          document.onkeydown = function(e) {
-            if (e.code === 'ArrowRight' || e.code === 'Space') {
-              document.querySelector('button:last-child').click();
-            } else if (e.code === 'ArrowLeft') {
-              document.querySelector('button:first-child').click();
-            } else if (e.code === 'KeyV' || e.code === 'Enter') {
-              document.querySelector('.cursor-pointer').click();
-            } else if (e.code === 'KeyS') {
-              const speakerBtn = document.querySelector('button[title*="Listen"]');
-              if (speakerBtn) speakerBtn.click();
-            }
-          };
-        `
-      }} />
     </main>
   );
 }
