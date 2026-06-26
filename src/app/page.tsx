@@ -68,7 +68,8 @@ function HomeContent() {
         setTopics(data.topics || []);
       }
 
-      const reviewRes = await fetch("/api/words/review");
+      const reviewUrl = folderId ? `/api/words/review?folder=${folderId}` : "/api/words/review";
+      const reviewRes = await fetch(reviewUrl);
       const reviewData = await reviewRes.json();
       if (reviewRes.ok && Array.isArray(reviewData)) {
         setReviewCount(reviewData.length);
@@ -242,7 +243,7 @@ function HomeContent() {
         <div className="flex flex-wrap gap-3 mb-12">
             {reviewCount > 0 && (
                 <Link 
-                    href="/quiz?mode=review"
+                    href={currentFolderId ? `/quiz?mode=review&folder=${currentFolderId}` : "/quiz?mode=review"}
                     className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-4 rounded-2xl transition-all shadow-xl font-black animate-bounce-slow"
                     title="Practice words scheduled for review"
                 >
@@ -281,28 +282,28 @@ function HomeContent() {
             ) : (
                 <>
                     <Link 
-                        href="/study" 
+                        href={currentFolderId ? `/study?folder=${currentFolderId}` : "/study"} 
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl transition-all font-bold shadow-lg"
                         title="Study all your words"
                     >
                         <BookOpen size={20} /> Study All
                     </Link>
                     <Link 
-                        href="/study?mode=weak" 
+                        href={currentFolderId ? `/study?mode=weak&folder=${currentFolderId}` : "/study?mode=weak"} 
                         className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50 px-6 py-4 rounded-2xl transition-all font-bold shadow-sm"
                         title="Study words you missed"
                     >
                         <BookOpen size={20} /> Study Weak
                     </Link>
                     <Link 
-                        href="/quiz?mode=weak" 
+                        href={currentFolderId ? `/quiz?mode=weak&folder=${currentFolderId}` : "/quiz?mode=weak"} 
                         className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50 px-6 py-4 rounded-2xl transition-all font-bold shadow-sm"
                         title="Quiz only words you missed"
                     >
                         <Flame size={20} className="fill-current" /> Weak Quiz
                     </Link>
                     <Link 
-                        href="/quiz" 
+                        href={currentFolderId ? `/quiz?folder=${currentFolderId}` : "/quiz"} 
                         className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-900 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 px-6 py-4 rounded-2xl transition-all font-bold shadow-sm"
                     >
                         <GraduationCap size={20} /> Full Quiz

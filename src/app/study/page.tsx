@@ -20,6 +20,7 @@ function StudyContent() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const topicsParam = searchParams.get("topics");
+  const folderParam = searchParams.get("folder");
   
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,9 +31,20 @@ function StudyContent() {
     setLoading(true);
     try {
       let url = mode === "weak" ? "/api/words/weak" : "/api/words";
-      if (topicsParam && mode !== "weak") {
-        url = `/api/words?topics=${topicsParam}`;
+      
+      const queryParams = new URLSearchParams();
+      if (folderParam) {
+        queryParams.set("folder", folderParam);
       }
+      if (topicsParam && mode !== "weak") {
+        queryParams.set("topics", topicsParam);
+      }
+      
+      const queryString = queryParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+
       const response = await fetch(url);
       const data = await response.json();
       if (response.ok) {
@@ -47,7 +59,7 @@ function StudyContent() {
 
   useEffect(() => {
     fetchWords();
-  }, [mode, topicsParam]);
+  }, [mode, topicsParam, folderParam]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

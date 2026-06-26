@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getFolderTopicIdsRecursive } from "@/lib/folders";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const topics = searchParams.get("topics");
+    const folder = searchParams.get("folder");
     
     let whereClause = {};
     if (topics) {
@@ -16,6 +18,13 @@ export async function GET(request: Request) {
           }
         };
       }
+    } else if (folder) {
+      const topicIds = await getFolderTopicIdsRecursive(folder);
+      whereClause = {
+        topicId: {
+          in: topicIds
+        }
+      };
     }
 
     const words = await prisma.word.findMany({

@@ -58,16 +58,27 @@ function QuizContent() {
     setSelectedMissedIds([]);
     try {
       const mode = searchParams.get("mode");
+      const folderParam = searchParams.get("folder");
       let url = "/api/words";
       
+      const queryParams = new URLSearchParams();
+      if (folderParam) {
+        queryParams.set("folder", folderParam);
+      }
       if (mode === "weak") {
         url = "/api/words/weak";
       } else if (mode === "review") {
         url = "/api/words/review";
       } else if (topicsParam) {
-        url = `/api/words?topics=${topicsParam}`;
+        url = "/api/words";
+        queryParams.set("topics", topicsParam);
       } else if (topicId) {
         url = `/api/topics/${topicId}`;
+      }
+
+      const queryString = queryParams.toString();
+      if (queryString && !topicId) {
+        url += `?${queryString}`;
       }
 
       const response = await fetch(url, { cache: "no-store" });
@@ -76,10 +87,30 @@ function QuizContent() {
       let wordsToQuiz: Word[] = [];
       if (mode === "weak") {
         wordsToQuiz = Array.isArray(data) ? data : [];
-        setSourceTopicName("Weak Words");
+        if (folderParam) {
+          try {
+            const folderRes = await fetch(`/api/folders/${folderParam}`);
+            const folderData = await folderRes.json();
+            setSourceTopicName(`${folderData.name} - Weak Words`);
+          } catch {
+            setSourceTopicName("Folder Weak Words");
+          }
+        } else {
+          setSourceTopicName("Weak Words");
+        }
       } else if (mode === "review") {
         wordsToQuiz = Array.isArray(data) ? data : [];
-        setSourceTopicName("Review Session");
+        if (folderParam) {
+          try {
+            const folderRes = await fetch(`/api/folders/${folderParam}`);
+            const folderData = await folderRes.json();
+            setSourceTopicName(`${folderData.name} - Review Session`);
+          } catch {
+            setSourceTopicName("Folder Review Session");
+          }
+        } else {
+          setSourceTopicName("Review Session");
+        }
       } else if (topicsParam) {
         wordsToQuiz = Array.isArray(data) ? data : [];
         setSourceTopicName("Multiple Topics");
@@ -88,7 +119,17 @@ function QuizContent() {
         setSourceTopicName(data.name || "Topic");
       } else {
         wordsToQuiz = Array.isArray(data) ? data : [];
-        setSourceTopicName("All Words");
+        if (folderParam) {
+          try {
+            const folderRes = await fetch(`/api/folders/${folderParam}`);
+            const folderData = await folderRes.json();
+            setSourceTopicName(`${folderData.name} Folder`);
+          } catch {
+            setSourceTopicName("Folder Session");
+          }
+        } else {
+          setSourceTopicName("All Words");
+        }
       }
 
       setWords(wordsToQuiz.sort(() => Math.random() - 0.5));
@@ -104,9 +145,10 @@ function QuizContent() {
     return words.slice(0, quizLimit);
   }, [words, quizLimit]);
 
+  const folderParam = searchParams.get("folder");
   useEffect(() => {
     fetchWords();
-  }, [topicId, searchParams.get("mode"), topicsParam]);
+  }, [topicId, searchParams.get("mode"), topicsParam, folderParam]);
 
   const options = useMemo(() => {
     if (!quizMode || quizMode === "flashcard" || finalWords.length === 0 || isFinished) return [];
