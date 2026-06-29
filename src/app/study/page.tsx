@@ -61,36 +61,6 @@ function StudyContent() {
     fetchWords();
   }, [mode, topicsParam, folderParam]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept keys if the user is typing in an input or textarea
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        return;
-      }
-
-      if (e.code === 'ArrowRight' || e.code === 'Space') {
-        e.preventDefault();
-        const btn = document.querySelector('button:last-child') as HTMLButtonElement | null;
-        if (btn) btn.click();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        const btn = document.querySelector('button:first-child') as HTMLButtonElement | null;
-        if (btn) btn.click();
-      } else if (e.code === 'KeyV' || e.code === 'Enter') {
-        const btn = document.querySelector('.cursor-pointer') as HTMLElement | null;
-        if (btn) btn.click();
-      } else if (e.code === 'KeyS') {
-        const speakerBtn = document.querySelector('button[title*="Listen"]') as HTMLButtonElement | null;
-        if (speakerBtn) speakerBtn.click();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const handleNext = () => {
     setShowDefinition(false);
@@ -149,7 +119,7 @@ function StudyContent() {
                   speak(currentWord.word);
                 }}
                 className="absolute right-0 top-0 text-emerald-300 dark:text-emerald-700 hover:text-emerald-600 dark:hover:text-emerald-400 p-4 transition-colors rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-800/50"
-                title="Listen to pronunciation (Key: S)"
+                title="Listen to pronunciation"
               >
                 <Volume2 size={40} />
               </button>
