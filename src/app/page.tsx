@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check, Book, FolderPlus, ArrowLeft, MoreVertical, Move } from "lucide-react";
+import { Plus, GraduationCap, Folder, Trash2, ChevronRight, Flame, BookOpen, Check, Book, FolderPlus, ArrowLeft, MoreVertical, Move, Pencil } from "lucide-react";
 import Link from "next/link";
 import TopicForm from "@/components/TopicForm";
 import FolderForm from "@/components/FolderForm";
@@ -49,6 +49,7 @@ function HomeContent() {
   const [reviewCount, setReviewCount] = useState(0);
   const [showTopicForm, setShowTopicForm] = useState(false);
   const [showFolderForm, setShowFolderForm] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<{id: string, name: string} | null>(null);
   const [moveState, setMoveState] = useState<MoveState | null>(null);
   
   const [loading, setLoading] = useState(true);
@@ -365,6 +366,17 @@ function HomeContent() {
                           <Move size={16} />
                         </button>
                         <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingFolder({ id: f.id, name: f.name });
+                          }}
+                          className="text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 p-2"
+                          title="Edit Folder"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
                           onClick={(e) => deleteFolder(e, f.id)}
                           className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-2"
                           title="Delete Folder"
@@ -468,6 +480,14 @@ function HomeContent() {
           onClose={() => setShowFolderForm(false)} 
           onSuccess={fetchData} 
           parentId={currentFolderId}
+        />
+      )}
+      {editingFolder && (
+        <FolderForm 
+          onClose={() => setEditingFolder(null)} 
+          onSuccess={fetchData} 
+          parentId={currentFolderId}
+          initialData={editingFolder}
         />
       )}
       {moveState && (
