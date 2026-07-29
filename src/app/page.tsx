@@ -41,9 +41,11 @@ interface MoveState {
 }
 
 function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [folders, setFolders] = useState<FolderData[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(searchParams.get('folder'));
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
   
   const [reviewCount, setReviewCount] = useState(0);
@@ -54,36 +56,42 @@ function HomeContent() {
   
   const [loading, setLoading] = useState(true);
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const fetchData = async (folderId: string | null = currentFolderId) => {
-    setLoading(true);
-    try {
-      const parentParam = folderId ? folderId : 'null';
-      const response = await fetch(`/api/folders?parentId=${parentParam}`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setFolders(data.folders || []);
-        setTopics(data.topics || []);
-      }
-
-      const reviewUrl = folderId ? `/api/words/review?folder=${folderId}` : "/api/words/review";
-      const reviewRes = await fetch(reviewUrl);
-      const reviewData = await reviewRes.json();
-      if (reviewRes.ok && Array.isArray(reviewData)) {
-        setReviewCount(reviewData.length);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchData();
+    let ignore = false;
+
+    const doFetch = async () => {
+      setLoading(true);
+      try {
+        const parentParam = currentFolderId ? currentFolderId : 'null';
+        const response = await fetch(`/api/folders?parentId=${parentParam}`);
+        const data = await response.json();
+        
+        if (!ignore && response.ok) {
+          setFolders(data.folders || []);
+          setTopics(data.topics || []);
+        }
+
+        const reviewUrl = currentFolderId ? `/api/words/review?folder=${currentFolderId}` : "/api/words/review";
+        const reviewRes = await fetch(reviewUrl);
+        const reviewData = await reviewRes.json();
+        if (!ignore && reviewRes.ok && Array.isArray(reviewData)) {
+          setReviewCount(reviewData.length);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    doFetch();
+
+    return () => {
+      ignore = true;
+    };
   }, [currentFolderId]);
 
   useEffect(() => {
@@ -133,7 +141,8 @@ function HomeContent() {
     try {
       const response = await fetch(`/api/folders/${id}`, { method: "DELETE" });
       if (response.ok) {
-        fetchData();
+        // Trigger a re-render/fetch by just forcing a fetch or reload since we removed fetchData
+        window.location.reload();
       }
     } catch (error) {
       console.error("Failed to delete folder:", error);
@@ -147,8 +156,7 @@ function HomeContent() {
     try {
       const response = await fetch(`/api/topics/${id}`, { method: "DELETE" });
       if (response.ok) {
-        fetchData();
-        setSelectedTopicIds(prev => prev.filter(selectedId => selectedId !== id));
+        window.location.reload();
       }
     } catch (error) {
       console.error("Failed to delete topic:", error);
@@ -471,21 +479,21 @@ function HomeContent() {
       {showTopicForm && (
         <TopicForm 
           onClose={() => setShowTopicForm(false)} 
-          onSuccess={fetchData} 
+          onSuccess={() => window.location.reload()} 
           folderId={currentFolderId}
         />
       )}
       {showFolderForm && (
         <FolderForm 
           onClose={() => setShowFolderForm(false)} 
-          onSuccess={fetchData} 
+          onSuccess={() => window.location.reload()} 
           parentId={currentFolderId}
         />
       )}
       {editingFolder && (
         <FolderForm 
           onClose={() => setEditingFolder(null)} 
-          onSuccess={fetchData} 
+          onSuccess={() => window.location.reload()} 
           parentId={currentFolderId}
           initialData={editingFolder}
         />
@@ -493,7 +501,7 @@ function HomeContent() {
       {moveState && (
         <MoveModal
           onClose={() => setMoveState(null)}
-          onSuccess={fetchData}
+          onSuccess={() => window.location.reload()}
           itemId={moveState.itemId}
           itemType={moveState.itemType}
           itemName={moveState.itemName}
