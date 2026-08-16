@@ -23,6 +23,15 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
   const [keepAdding, setKeepAdding] = useState(false);
   
   const wordInputRef = useRef<HTMLInputElement>(null);
+  const exampleRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize example textarea
+  useEffect(() => {
+    if (exampleRef.current) {
+      exampleRef.current.style.height = 'auto';
+      exampleRef.current.style.height = `${exampleRef.current.scrollHeight}px`;
+    }
+  }, [example]);
 
   // Initialize keepAdding from localStorage
   useEffect(() => {
@@ -133,11 +142,19 @@ export default function WordForm({ topicId, onClose, onSuccess, initialData }: W
 
           <div>
             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 px-1">Example (Optional)</label>
-            <input
-              type="text"
+            <textarea
+              ref={exampleRef}
+              rows={1}
               value={example}
               onChange={(e) => setExample(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              className="w-full px-5 py-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-gray-900 dark:text-white resize-none overflow-y-auto max-h-[144px]"
+              style={{ minHeight: '56px' }}
               placeholder="Use it in a sentence"
             />
           </div>
