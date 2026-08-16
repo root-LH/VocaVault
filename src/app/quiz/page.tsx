@@ -546,7 +546,7 @@ function QuizContent() {
               {!showDefinition ? (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><h2 className="text-6xl font-black text-blue-900 mb-8 tracking-tighter">{currentWord.word}</h2><div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-8 py-4 rounded-full font-bold"><Eye size={20} /> Click to reveal</div></div>
               ) : (
-                <div className="animate-in fade-in zoom-in duration-300 w-full"><h3 className="text-xl font-bold text-blue-300 mb-6 uppercase tracking-widest">{currentWord.word}</h3><p className="text-3xl font-bold text-gray-800 leading-tight mb-8">{currentWord.definition}</p>{currentWord.example && <div className="mt-8 text-blue-500 italic text-xl border-t border-blue-50 pt-8 px-6 bg-blue-50/30 rounded-3xl pb-8">"{currentWord.example}"</div>}<div className="mt-6 inline-flex items-center gap-2 text-gray-400 text-sm font-medium"><RefreshCw size={14} /> Click to flip back</div></div>
+                <div className="animate-in fade-in zoom-in duration-300 w-full"><h3 className="text-xl font-bold text-blue-300 mb-6 uppercase tracking-widest">{currentWord.word}</h3><p className="text-3xl font-bold text-gray-800 leading-tight mb-8">{currentWord.definition}</p>{currentWord.example && <div className="mt-8 text-blue-500 text-xl border-t border-blue-50 pt-8 px-6 bg-blue-50/30 rounded-3xl pb-8">"{currentWord.example}"</div>}<div className="mt-6 inline-flex items-center gap-2 text-gray-400 text-sm font-medium"><RefreshCw size={14} /> Click to flip back</div></div>
               )}
             </div>
             <div className="mt-12">{!showDefinition ? (

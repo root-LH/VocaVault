@@ -319,7 +319,7 @@ export default function TopicDetail({ params }: { params: { id: string } }) {
                         {w.definition}
                       </p>
                       {w.example && (
-                        <p className={`mt-4 text-sm italic p-4 rounded-2xl border transition-colors ${
+                        <p className={`mt-4 text-sm p-4 rounded-2xl border transition-colors ${
                           isSelected 
                             ? 'bg-blue-100/30 dark:bg-blue-900/20 border-blue-200/50 text-blue-700 dark:text-blue-300' 
                             : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-500'

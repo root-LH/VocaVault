@@ -120,7 +120,7 @@ export default function StudyPage({ params }: { params: { id: string } }) {
               <span className="text-xs font-black text-emerald-300 dark:text-emerald-700 uppercase tracking-widest mb-4 block transition-colors">Definition</span>
               <p className="text-3xl font-bold text-gray-800 dark:text-gray-100 leading-tight mb-8 transition-colors">{currentWord.definition}</p>
               {currentWord.example && (
-                <div className="mt-8 text-emerald-600 dark:text-emerald-400 italic text-xl border-t border-emerald-50 dark:border-emerald-900/20 pt-8 px-6 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-3xl pb-8 transition-colors">
+                <div className="mt-8 text-emerald-600 dark:text-emerald-400 text-xl border-t border-emerald-50 dark:border-emerald-900/20 pt-8 px-6 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-3xl pb-8 transition-colors">
                   "{currentWord.example}"
                 </div>
               )}

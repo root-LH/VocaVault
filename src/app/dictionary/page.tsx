@@ -231,7 +231,7 @@ export default function DictionaryPage() {
                       </p>
 
                       {d.example && (
-                        <p className="text-sm italic text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-50 dark:border-gray-800/50">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-50 dark:border-gray-800/50">
                           "{d.example}"
                         </p>
                       )}
